@@ -405,7 +405,47 @@
       z-index: 1000;
       animation: slideIn 0.3s ease;
     }
+ /* Add new styles for social buttons */
+.social-buttons {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 1000;
+}
 
+.social-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 20px;
+  text-decoration: none;
+  color: white;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  gap: 8px;
+}
+
+.telegram-btn {
+  background: linear-gradient(45deg, #0088cc, #0099ff);
+}
+
+.twitter-btn {
+  background: linear-gradient(45deg, #1DA1F2, #1a91da);
+}
+
+.social-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.social-icon {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
     @keyframes slideIn {
       from {
         transform: translateX(100%);
@@ -1013,47 +1053,7 @@ setInterval(async () => {
     await updateCryptoGainers().catch(console.error);
   }
 }, 30000);</script>
-  /* Add new styles for social buttons */
-.social-buttons {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  display: flex;
-  gap: 10px;
-  z-index: 1000;
-}
-
-.social-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 20px;
-  border-radius: 20px;
-  text-decoration: none;
-  color: white;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  gap: 8px;
-}
-
-.telegram-btn {
-  background: linear-gradient(45deg, #0088cc, #0099ff);
-}
-
-.twitter-btn {
-  background: linear-gradient(45deg, #1DA1F2, #1a91da);
-}
-
-.social-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.social-icon {
-  width: 24px;
-  height: 24px;
-  fill: currentColor;
-}
+ 
 
 <div class="social-buttons">
   <a href="https://t.me/GNUaiOfficial" target="_blank" class="social-button telegram-btn">

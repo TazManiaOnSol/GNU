@@ -1,767 +1,4 @@
-<html><head><base href="/">
-  <title>Web3 AI Agent</title>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=Rajdhani:wght@500;700&amp;display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.87.6/lib/index.iife.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.24/lib/index.iife.js"></script>
-  <script src="https://cdn.coingecko.com/api/v3/simple/price?ids=solana&amp;vs_currencies=usd"></script>
-  <style>
-    :root {
-      --neon-purple: #b026ff;
-      --dark-bg: #0a0b1e;
-      --grid-color: rgba(176, 38, 255, 0.1);
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      background: var(--dark-bg);
-      color: #fff;
-      font-family: 'IBM Plex Mono', monospace;
-      min-height: 100vh;
-    }
-
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
-
-    nav {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding: 1rem;
-      background: rgba(176, 38, 255, 0.1);
-      border-bottom: 2px solid var(--neon-purple);
-      margin-bottom: 2rem;
-    }
-
-    .nav-link {
-      color: #fff;
-      text-decoration: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      transition: all 0.3s ease;
-    }
-
-    .nav-link:hover,
-    .nav-link.active {
-      background: var(--neon-purple);
-      color: #fff;
-    }
-
-    .page {
-      display: none;
-      animation: fadeIn 0.5s ease;
-    }
-
-    .page.active {
-      display: block;
-    }
-
-    .card {
-      background: rgba(176, 38, 255, 0.05);
-      border: 1px solid var(--neon-purple);
-      padding: 1.5rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 3rem;
-    }
-
-    .header h1 {
-      font-size: 3.5rem;
-      color: var(--neon-purple);
-      text-shadow: 0 0 10px rgba(176, 38, 255, 0.5);
-      font-family: 'Rajdhani', sans-serif;
-    }
-
-    button {
-      padding: 0.8rem 1.5rem;
-      background: var(--neon-purple);
-      border: none;
-      color: #fff;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 0 15px rgba(176, 38, 255, 0.5);
-    }
-
-    #wallet-btn {
-      background: #ffffff;
-      color: var(--dark-bg);
-      font-weight: bold;
-    }
-
-    #wallet-btn:hover {
-      background: #f0f0f0;
-    }
-
-    #wallet-btn.connected {
-      background: var(--neon-purple);
-      color: white;
-    }
-
-    input, textarea {
-      width: 100%;
-      padding: 0.8rem;
-      margin-bottom: 1rem;
-      background: rgba(176, 38, 255, 0.1);
-      border: 1px solid var(--neon-purple);
-      color: #fff;
-      border-radius: 4px;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    .loading {
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
-
-    .token-balance {
-      display: flex;
-      justify-content: space-between;
-      padding: 0.5rem 0;
-      border-bottom: 1px solid rgba(176, 38, 255, 0.2);
-    }
-
-    .suggestion-item {
-      margin-bottom: 1rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid rgba(176, 38, 255, 0.2);
-    }
-
-    .bullish { color: #00ff00; }
-    .bearish { color: #ff0000; }
-    .neutral { color: #ffff00; }
-
-    #predictionChart {
-      background: rgba(176, 38, 255, 0.05);
-      border-radius: 4px;
-    }
-
-    #riskScore {
-      margin-top: 1rem;
-      height: 10px;
-      background: linear-gradient(to right, #00ff00, #ffff00, #ff0000);
-      border-radius: 5px;
-      position: relative;
-    }
-
-    .background-animation {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -1;
-      overflow: hidden;
-    }
-
-    .grid {
-      position: absolute;
-      width: 200%;
-      height: 200%;
-      background-image: linear-gradient(var(--grid-color) 1px, transparent 1px),
-                        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-      background-size: 50px 50px;
-      animation: gridMove 20s linear infinite;
-      transform: perspective(500px) rotateX(45deg);
-    }
-
-    .particles {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle at center, var(--neon-purple) 0%, transparent 5%);
-      background-size: 3px 3px;
-      animation: particlesFade 3s ease-in-out infinite;
-    }
-
-    .terminal-container {
-      background: rgba(0, 0, 0, 0.8);
-      border: 1px solid var(--neon-purple);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .terminal-header {
-      background: rgba(176, 38, 255, 0.2);
-      padding: 10px;
-      display: flex;
-      gap: 8px;
-    }
-
-    .terminal-button {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: var(--neon-purple);
-    }
-
-    .terminal-content {
-      padding: 15px;
-      font-family: 'IBM Plex Mono', monospace;
-      height: 300px;
-      overflow-y: auto;
-      color: #00ff00;
-      font-size: 14px;
-      line-height: 1.4;
-    }
-
-    .terminal-line {
-      margin: 5px 0;
-      animation: fadeIn 0.3s ease;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-
-    .terminal-line.error {
-      color: #ff3366;
-      font-weight: bold;
-    }
-
-    .solana-logo {
-      width: 60px;
-      height: 60px;
-      margin-bottom: 1rem;
-      filter: drop-shadow(0 0 10px rgba(0, 255, 163, 0.5));
-    }
-
-    .connection-error {
-      border-color: #ff3366;
-      background: rgba(255, 51, 102, 0.1);
-    }
-
-    @keyframes gridMove {
-      0% { transform: perspective(500px) rotateX(45deg) translateY(0); }
-      100% { transform: perspective(500px) rotateX(45deg) translateY(-50px); }
-    }
-
-    @keyframes particlesFade {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 0.6; }
-    }
-
-    .nft-preview {
-      margin-top: 1rem;
-      min-height: 300px;
-      border: 1px dashed var(--neon-purple);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .nft-gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-
-    .nft-item {
-      border: 1px solid var(--neon-purple);
-      border-radius: 8px;
-      padding: 0.5rem;
-      background: rgba(176, 38, 255, 0.1);
-    }
-
-    .nft-item img {
-      width: 100%;
-      height: auto;
-      border-radius: 4px;
-    }
-    
-    .terminal-line a {
-      color: inherit;
-      text-decoration: underline;
-      cursor: pointer;
-    }
-
-    .terminal-line a:hover {
-      opacity: 0.8;
-    }
-
-    .crypto-gainers-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-
-    .crypto-gainer-card {
-      background: rgba(176, 38, 255, 0.1);
-      border: 1px solid var(--neon-purple);
-      border-radius: 8px;
-      padding: 1rem;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .crypto-gainer-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 0 15px rgba(176, 38, 255, 0.3);
-    }
-
-    .gainer-price {
-      font-size: 1.2em;
-      font-weight: bold;
-      color: var(--neon-purple);
-    }
-
-    .gainer-change.positive {
-      color: #00ff00;
-    }
-
-    .gainer-change.negative {
-      color: #ff0000;
-    }
-
-    .nft-controls {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-
-    .nft-style-select {
-      flex: 1;
-      padding: 0.8rem;
-      background: rgba(176, 38, 255, 0.1);
-      border: 1px solid var(--neon-purple);
-      color: #fff;
-      border-radius: 4px;
-    }
-
-    .download-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: var(--neon-purple);
-      color: white;
-      padding: 0.8rem 1.5rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .download-btn svg {
-      width: 16px;
-      height: 16px;
-    }
-
-    .magic-eden-btn {
-      background: linear-gradient(45deg, #FF2D55, #FFBD2D);
-      color: white;
-      padding: 0.8rem 1.5rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: all 0.3s ease;
-    }
-
-    .magic-eden-btn:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 0 15px rgba(255, 45, 85, 0.3);
-    }
-
-    .magic-eden-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    #development-notification {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: rgba(255, 255, 255, 0.95);
-      color: #333;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      display: none;
-      z-index: 1000;
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-  </style>
-</head>
-<body>
-  <nav>
-    <a href="#dashboard" class="nav-link active" onclick="showPage(&apos;dashboard&apos;)">Dashboard</a>
-    <a href="#chat" class="nav-link" onclick="showPage(&apos;chat&apos;)">AI Chat</a>
-    <a href="#wallet" class="nav-link" onclick="showPage(&apos;wallet&apos;)">Wallet</a>
-    <a href="#transactions" class="nav-link" onclick="showPage(&apos;transactions&apos;)">NFT Generator</a>
-    <button id="wallet-btn" onclick="connectWallet()">Connect Wallet</button>
-  </nav>
-  <div class="container">
-    <div class="background-animation">
-      <div class="grid"></div>
-      <div class="particles"></div>
-    </div>
-    <!-- Dashboard Page -->
-    <div id="dashboard" class="page active">
-      <div class="header">
-        <svg class="solana-logo" width="100" height="100" viewBox="0 0 398 312" fill="none">
-          <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h324.4c5.9 0 8.8 7.1 4.7 11.2L347 301.2c-2.4 2.4-5.7 3.8-9.2 3.8H13.4c-5.9 0-8.8-7.1-4.7-11.2l55.9-55.9zM64.6 3.8C67 1.4 70.3 0 73.8 0h324.4c5.9 0 8.8 7.1 4.7 11.2l-55.9 55.9c-2.4 2.4-5.7 3.8-9.2 3.8H13.4c-5.9 0-8.8-7.1-4.7-11.2L64.6 3.8zM347 120.9c-2.4-2.4-5.7-3.8-9.2-3.8H13.4c-5.9 0-8.8 7.1-4.7 11.2l55.9 55.9c2.4 2.4 5.7 3.8 9.2 3.8h324.4c5.9 0 8.8-7.1 4.7-11.2L347 120.9z" fill="#00FFA3"/>
-        </svg>
-        <h1>Web3 AI Agent Dashboard</h1>
-      </div>
-      <div class="card">
-        <h2>Network Status</h2>
-        <p id="networkStatus">Connected to Solana</p>
-        <p id="walletBalance">Wallet Balance: -- SOL</p>
-        <div id="tokenBalances"></div>
-      </div>
-      <div class="terminal-container card">
-        <div class="terminal-header">
-          <div class="terminal-button"></div>
-          <div class="terminal-button"></div>
-          <div class="terminal-button"></div>
-        </div>
-        <div id="cryptoTerminal" class="terminal-content"></div>
-      </div>
-      <div class="card">
-        <h2>Top Crypto Gainers</h2>
-        <div id="cryptoGainers" class="crypto-gainers-grid"></div>
-      </div>
-      <div class="card">
-        <h2>Portfolio Analysis</h2>
-        <p id="portfolioAnalysis">Loading analysis...</p>
-        <div id="riskScore"></div>
-      </div>
-      <div class="card">
-        <h2>Smart Trade Suggestions</h2>
-        <div id="tradeSuggestions">Loading suggestions...</div>
-      </div>
-    </div>
-    <!-- AI Chat Page -->
-    <div id="chat" class="page">
-      <div class="header">
-        <h1>AI Assistant</h1>
-      </div>
-      <div class="card">
-        <div id="chatHistory"></div>
-        <textarea id="userInput" placeholder="Ask me anything about Web3..." rows="3"></textarea>
-        <button onclick="sendMessage()">Send Message</button>
-      </div>
-    </div>
-    <!-- Wallet Page -->
-    <div id="wallet" class="page">
-      <div class="header">
-        <h1>Wallet Management</h1>
-      </div>
-      <div class="card">
-        <h2>Send Transaction</h2>
-        <input type="text" id="recipientAddress" placeholder="Recipient Address">
-        <input type="number" id="amount" placeholder="Amount (SOL)">
-        <button onclick="sendTransaction()">Send SOL</button>
-      </div>
-      <div class="card">
-        <h2>Transaction History</h2>
-        <div id="txHistory"></div>
-      </div>
-    </div>
-    <!-- NFT Generator Page -->
-    <div id="transactions" class="page">
-      <div class="header">
-        <h1>NFT Generator</h1>
-      </div>
-      <div class="card">
-        <h2>Generate NFT</h2>
-        <textarea id="nftPrompt" placeholder="Describe your NFT..." rows="3"></textarea>
-        <select id="nftStyle" class="nft-style-select">
-          <option value="pixelart">Pixel Art</option>
-          <option value="abstract">Abstract</option>
-          <option value="cyberpunk">Cyberpunk</option>
-          <option value="minimalist">Minimalist</option>
-          <option value="3d">3D Render</option>
-          <option value="anime">Anime Style</option>
-          <option value="vaporwave">Vaporwave</option>
-          <option value="surreal">Surrealist</option>
-        </select>
-        <div class="nft-controls">
-          <button onclick="generateNFT()">Generate NFT</button>
-          <button id="downloadNFT" class="download-btn" onclick="downloadNFT()" disabled>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 16l-5-5h3V4h4v7h3l-5 5zm-5 4h10v-2H7v2z"/>
-            </svg>
-            Download
-          </button>
-          <button id="listMagicEden" class="magic-eden-btn" onclick="listOnMagicEden()" disabled>
-            List on Magic Eden
-          </button>
-        </div>
-        <div id="nftPreview" class="nft-preview"></div>
-      </div>
-      <div class="card">
-        <h2>Generated NFTs</h2>
-        <div id="nftGallery" class="nft-gallery"></div>
-      </div>
-    </div>
-  </div>
-  <script>const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com', {
-  commitment: 'confirmed',
-  wsEndpoint: 'wss://api.mainnet-beta.solana.com/',
-  httpHeaders: {
-    'Content-Type': 'application/json'
-  }
-});
-let currentWallet = null;
-let solPrice = 0;
-let lastUpdate = Date.now();
-async function connectWallet() {
-  showDevelopmentNotification();
-  try {
-    const {
-      solana
-    } = window;
-    if (!solana?.isPhantom) {
-      alert('Please install Phantom wallet!');
-      window.open('https://phantom.app/', '_blank');
-      return;
-    }
-    const resp = await window.solana.connect({
-      onlyIfTrusted: false
-    }).catch(err => {
-      throw new Error(`Wallet connection failed: ${err.message}`);
-    });
-    currentWallet = resp.publicKey;
-    const walletBtn = document.getElementById('wallet-btn');
-    walletBtn.textContent = `${currentWallet.toString().slice(0, 4)}...${currentWallet.toString().slice(-4)}`;
-    walletBtn.classList.add('connected');
-    await Promise.all([updateWalletInfo().catch(console.error), initializeDashboard().catch(console.error)]);
-  } catch (err) {
-    console.error('Error connecting wallet:', err);
-    alert('Failed to connect wallet: ' + err.message);
-  }
-}
-async function updateWalletInfo() {
-  if (!currentWallet) return;
-  try {
-    const balance = await connection.getBalance(currentWallet);
-    document.getElementById('walletBalance').textContent = `Wallet Balance: ${(balance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL`;
-  } catch (error) {
-    console.error('Error updating wallet info:', error);
-    document.getElementById('walletBalance').textContent = 'Error fetching balance';
-  }
-}
-async function updateTerminal() {
-  const terminal = document.getElementById('cryptoTerminal');
-  const now = new Date().toLocaleTimeString();
-  try {
-    const headlines = await generateCryptoNews();
-    const terminalLines = headlines.map(headline => {
-      const colorClass = headline.impact === 'positive' ? 'bullish' : headline.impact === 'negative' ? 'bearish' : 'neutral';
-      return `[${now}] <a href="${headline.url}" target="_blank" class="${colorClass}">${headline.title}</a>
-              ↳ ${headline.details}`;
-    });
-    terminal.innerHTML = terminalLines.map(line => `<div class="terminal-line">${line}</div>`).join('') + terminal.innerHTML;
-    const lines = terminal.getElementsByClassName('terminal-line');
-    while (lines.length > 10) {
-      lines[lines.length - 1].remove();
-    }
-  } catch (error) {
-    terminal.innerHTML = `<div class="terminal-line error">[${now}] Error: ${error.message}</div>` + terminal.innerHTML;
-    console.error('Terminal update error:', error);
-  }
-  lastUpdate = Date.now();
-}
-function showPage(pageId) {
-  document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-  document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-  document.getElementById(pageId).classList.add('active');
-  document.querySelector(`[href="#${pageId}"]`).classList.add('active');
-}
-async function initializeDashboard() {
-  try {
-    const response = await fetch('/api/ai_completion', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        prompt: `Provide a market analysis for Solana.
-                
-                <typescript-interface>
-                interface Response {
-                  analysis: string;
-                }
-                </typescript-interface>
-                
-                <example>
-                {
-                  "analysis": "Solana's network metrics show strong growth with increasing TVL and daily active users."
-                }
-                </example>`
-      })
-    });
-    const data = await response.json();
-    document.getElementById('marketAnalysis').textContent = data.analysis;
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
-async function sendMessage() {
-  const userInput = document.getElementById('userInput');
-  const message = userInput.value.trim();
-  if (!message) return;
-  const chatHistory = document.getElementById('chatHistory');
-  chatHistory.innerHTML += `<p><strong>You:</strong> ${message}</p>`;
-  userInput.value = '';
-  try {
-    const response = await fetch('/api/ai_completion', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        prompt: `Respond to this Web3 related question: ${message}
-                
-                <typescript-interface>
-                interface Response {
-                  answer: string;
-                }
-                </typescript-interface>
-                
-                <example>
-                {
-                  "answer": "Smart contracts are self-executing contracts with the terms directly written into code."
-                }
-                </example>`
-      })
-    });
-    const data = await response.json();
-    chatHistory.innerHTML += `<p><strong>AI:</strong> ${data.answer}</p>`;
-    chatHistory.scrollTop = chatHistory.scrollHeight;
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
-async function sendTransaction() {
-  if (!currentWallet) {
-    alert('Please connect your wallet first');
-    return;
-  }
-  const recipient = document.getElementById('recipientAddress').value;
-  const amount = parseFloat(document.getElementById('amount').value);
-  try {
-    const transaction = new solanaWeb3.Transaction().add(solanaWeb3.SystemProgram.transfer({
-      fromPubkey: currentWallet,
-      toPubkey: new solanaWeb3.PublicKey(recipient),
-      lamports: amount * solanaWeb3.LAMPORTS_PER_SOL
-    }));
-    const {
-      signature
-    } = await window.solana.signAndSendTransaction(transaction);
-    await connection.confirmTransaction(signature);
-    alert('Transaction successful!');
-    document.getElementById('txHistory').innerHTML += `
-              <p>Sent ${amount} SOL to ${recipient.slice(0, 4)}...${recipient.slice(-4)}</p>
-            `;
-  } catch (error) {
-    console.error('Transaction error:', error);
-    alert('Transaction failed');
-  }
-}
-async function updateTransactionInsights() {
-  try {
-    const response = await fetch('/api/ai_completion', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        prompt: `Analyze recent Solana transaction patterns.
-                
-                <typescript-interface>
-                interface Response {
-                  insight: string;
-                }
-                </typescript-interface>
-                
-                <example>
-                {
-                  "insight": "Recent transactions show increased DeFi activity and NFT trading volume."
-                }
-                </example>`
-      })
-    });
-    const data = await response.json();
-    document.getElementById('txInsights').textContent = data.insight;
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
-async function updateDashboardUtilities() {
-  await Promise.all([updatePricePredictions(), updatePortfolioAnalysis(), updateTradeSuggestions(), updateTokenBalances()]);
-}
-async function updatePricePredictions() {
-  try {
-    const priceResp = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-    const priceData = await priceResp.json();
-    const currentPrice = priceData.solana.usd;
-    const historyResp = await fetch('https://api.coingecko.com/api/v3/coins/solana/market_chart?vs_currency=usd&days=30');
-    const historyData = await historyResp.json();
-    const prices = historyData.prices;
-    const sma20 = prices.slice(-20).reduce((a, b) => a + b[1], 0) / 20;
-    const lastPrice = prices[prices.length - 1][1];
-    const sentiment = lastPrice > sma20 ? 'bullish' : 'bearish';
-    const prediction = `Based on technical analysis, SOL is currently ${sentiment}. 20-day moving average is at $${sma20.toFixed(2)}`;
-    const priceTarget = sentiment === 'bullish' ? currentPrice * 1.1 : currentPrice * 0.9;
-    document.getElementById('pricePrediction').innerHTML = `
-      <p><strong>Current Price:</strong> $${currentPrice}</p>
-      <p><strong>Analysis:</strong> ${prediction}</p>
-      <p><strong>Sentiment:</strong> <span class="${sentiment}">${sentiment}</span></p>
-      <p><strong>Price Target:</strong> $${priceTarget.toFixed(2)}</p>
-    `;
-  } catch (error) {
-    console.error('Error updating price predictions:', error);
-    document.getElementById('pricePrediction').innerHTML = `<p>Error fetching price data</p>`;
-  }
-}
-async function updatePortfolioAnalysis() {
-  if (!currentWallet) return;
-  try {
-    const response = await fetch('/api/ai_completion', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        prompt: `Analyze this Solana wallet portfolio: ${currentWallet.toString()}
+prompt: `Analyze this Solana wallet portfolio: ${currentWallet.toString()}
                 
                 <typescript-interface>
                 interface Response {
@@ -879,38 +116,72 @@ async function generateNFT() {
   const prompt = document.getElementById('nftPrompt').value.trim();
   const style = document.getElementById('nftStyle').value;
   if (!prompt) return;
+  
   const preview = document.getElementById('nftPreview');
   const downloadBtn = document.getElementById('downloadNFT');
   const magicEdenBtn = document.getElementById('listMagicEden');
+  
   preview.innerHTML = '<p>Generating NFT...</p>';
   downloadBtn.disabled = true;
   magicEdenBtn.disabled = true;
+
   try {
     const response = await fetch('/api/ai_completion', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
-        prompt: `Generate ${style} style SVG NFT art based on: ${prompt}
+        prompt: `Generate an NFT artwork in ${style} style based on this description: ${prompt}
         
+        <typescript-interface>
         interface Response {
           svg: string;
           attributes: Array<{
             trait_type: string;
             value: string;
           }>;
-        }`,
+        }
+        </typescript-interface>
+
+        <example>
+        {
+          "svg": "<svg width='400' height='400'>...</svg>",
+          "attributes": [
+            {
+              "trait_type": "Style",
+              "value": "Pixel Art"
+            },
+            {
+              "trait_type": "Theme",
+              "value": "Cyberpunk"
+            }
+          ]
+        }
+        </example>`,
         data: {
           prompt,
           style
         }
       })
     });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data = await response.json();
+    
+    if (!data || !data.svg) {
+      throw new Error('Invalid response format');
+    }
+
     preview.innerHTML = data.svg;
     downloadBtn.disabled = false;
     magicEdenBtn.disabled = false;
+
+    // Add to gallery
     const gallery = document.getElementById('nftGallery');
     const nftItem = document.createElement('div');
     nftItem.className = 'nft-item';
@@ -918,12 +189,13 @@ async function generateNFT() {
       ${data.svg}
       <p><strong>Style:</strong> ${style}</p>
       <p><strong>Traits:</strong></p>
-      ${data.attributes.map(attr => `<p>${attr.trait_type}: ${attr.value}</p>`).join('')}
+      ${data.attributes?.map(attr => `<p>${attr.trait_type}: ${attr.value}</p>`).join('') || ''}
     `;
     gallery.prepend(nftItem);
+
   } catch (error) {
     console.error('Error generating NFT:', error);
-    preview.innerHTML = '<p>Error generating NFT</p>';
+    preview.innerHTML = `<p>Error generating NFT: ${error.message}</p>`;
     downloadBtn.disabled = true;
     magicEdenBtn.disabled = true;
   }
@@ -1005,6 +277,7 @@ setInterval(async () => {
   if (document.getElementById('dashboard').classList.contains('active')) {
     await updateCryptoGainers().catch(console.error);
   }
-}, 30000);</script>
+}, 30000);
+</script>
 </body>
-</html>
+    </html>

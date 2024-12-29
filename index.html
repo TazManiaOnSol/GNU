@@ -938,9 +938,14 @@ async function fetchCryptoGainers() {
     return [];
   }
 }
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function updateCryptoGainers() {
   const gainersContainer = document.getElementById('cryptoGainers');
   try {
+    await delay(1000); // Wait for 1 second before making the request
     const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=price_change_percentage_24h_desc&per_page=12&page=1&sparkline=false', {
       cache: 'no-store'
     });
@@ -960,6 +965,7 @@ async function updateCryptoGainers() {
     console.error('Error updating crypto gainers:', error);
   }
 }
+
 function downloadNFT() {
   const svg = document.getElementById('nftPreview').innerHTML;
   const blob = new Blob([svg], {
